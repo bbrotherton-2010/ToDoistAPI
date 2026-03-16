@@ -1,4 +1,6 @@
 import os
+from pprint import pprint
+
 from todoist_api_python.api import TodoistAPI
 import requests
 
@@ -34,20 +36,16 @@ class apiCalls:
 
         return projects
 
-    def getAllTasks(self):
+    def getAllOpenTasks(self):
         tasks = self.getCall('tasks')
         nextCursor = tasks['next_cursor']
-        count = 0
+        allData = tasks['results']
 
-        if len(nextCursor) > 0:
-            allData = tasks['results']
-            while not nextCursor:
-                taskHolder = self.getCall('tasks', f'?cursor={nextCursor}')
-                allData = allData | taskHolder['results']
-                nextCursor = taskHolder['next_cursor']
-                count = count+1
-            print(len(allData))
-            print (count)
-            return allData
-        else:
-            return tasks
+
+        while nextCursor:
+            taskHolder = self.getCall('tasks', f'?cursor={nextCursor}')
+            allData.append(taskHolder['results'])
+            nextCursor = taskHolder['next_cursor']
+
+        pprint(allData)
+        return allData
