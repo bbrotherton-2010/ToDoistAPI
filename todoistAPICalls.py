@@ -1,51 +1,66 @@
-import os
-from pprint import pprint
-
-from todoist_api_python.api import TodoistAPI
+import config as config
 import requests
 
-class apiCalls:
+class ApiCalls:
 
     def __init__(self):
-        self.apiKey = os.environ['TODOIST_API_KEY']
-        self.api = TodoistAPI(self.apiKey)
+        self.apiKey = config.API_KEY
         self.headers = {
             'Authorization': f'Bearer {self.apiKey}',
             'Content-Type': 'application/x-www-form-urlencoded',
-            'limit': 200
         }
-        self.baseUrl = 'https://api.todoist.com/api/v1/'
+        self.baseUrl = config.BASE_URL
 
-    def getCall(self, url, additionalQuery=''):
-        headers = {
-            'Authorization': f'Bearer {self.apiKey}',
-            'Content-Type': 'application/x-www-form-urlencoded',
-        }
-        if len(additionalQuery) > 0:
-            query = f'{additionalQuery}&limit=200'
-        else:
-            query = '?limit=200'
+    def getCallWithLimit(self, url, additionalQuery=''):
 
-        todoistGet = requests.get(f'{self.baseUrl}{url}{query}', headers=headers)
+        todoistGet = requests.get(f'{self.baseUrl}{url}{additionalQuery}', headers=self.headers)
+        todoistGetJson = todoistGet.json()
+
+        nextCursor = todoistGetJson['next_cursor']
+        allData = todoistGetJson['results']
+
+
+        if(len(nextCursor) > 0):
+
+            while nextCursor:
+                dataHolder = requests.get(f'{self.baseUrl}{url}?cursor={nextCursor}&limit=200{additionalQuery}', headers=self.headers)
+                dataHolderJson = dataHolder.json()
+                allData.append(dataHolderJson['results'])
+                nextCursor = dataHolderJson['next_cursor']
+
+        return allData
+
+    def getCallSimple(self, url, query=''):
+
+        todoistGet = requests.get(f'{self.baseUrl}{url}{query}', headers=self.headers)
         todoistGetJson = todoistGet.json()
         return todoistGetJson
 
-
     def getAllProjects(self):
-        projects = self.getCall('projects')
+        allProjects = self.getCallSimple('projects')
 
-        return projects
+        return allProjects
+
+    def getOneProject(self,projectId):
+        project = self.getCallSimple(f'projects/{projectId}')
+
+        return project
 
     def getAllOpenTasks(self):
-        tasks = self.getCall('tasks')
+        tasks = self.getCallWithLimit('tasks')
+
+
+        return tasks
+
+    def getAllOpenTasksInAProject(self,projectId):
+        tasks = self.getCallWithLimit('tasks')
         nextCursor = tasks['next_cursor']
         allData = tasks['results']
 
 
         while nextCursor:
-            taskHolder = self.getCall('tasks', f'?cursor={nextCursor}')
+            taskHolder = self.getCallWithLimit('tasks', f'?cursor={nextCursor}')
             allData.append(taskHolder['results'])
             nextCursor = taskHolder['next_cursor']
 
-        pprint(allData)
         return allData

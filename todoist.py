@@ -1,14 +1,32 @@
+import sys
+from selectors import SelectSelector
+
+import config
 import todoistAPICalls as calls
 import json
 import pandas as pd
 
 
-api = calls.apiCalls()
+api = calls.ApiCalls()
 projectData = api.getAllProjects()
 openTaskData = api.getAllOpenTasks()
 
-for project in projectData['results']:
-    print(f'Name: {project['name']}; Id: {project["id"]}')
+print(openTaskData)
+
+projectNameInput = config.PROJECT_NAME
+
+try:
+    for project in projectData['results']:
+        if project['name'] == projectNameInput:
+            projectId = project['id']
+            break
+    masterList = api.getOneProject(projectId)
+except:
+    print(f'Project entered not found: {projectNameInput}.  Check the name and try again.')
+    sys.exit()
+
+# print(api.getAllOpenTasksInAProject(projectId))
+
 
 
 # TODO pull out due dates, parent, project, and content
