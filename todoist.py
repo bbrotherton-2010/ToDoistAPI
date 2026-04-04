@@ -1,4 +1,5 @@
 import sys
+from pprint import pprint
 from selectors import SelectSelector
 
 import config
@@ -9,23 +10,34 @@ import pandas as pd
 
 api = calls.ApiCalls()
 projectData = api.getAllProjects()
-openTaskData = api.getAllOpenTasks()
+# openTaskData = api.getAllOpenTasks()
 
-print(openTaskData)
+# pprint(projectData)
 
 projectNameInput = config.PROJECT_NAME
 
 try:
-    for project in projectData['results']:
+    for project in projectData:
         if project['name'] == projectNameInput:
             projectId = project['id']
             break
-    masterList = api.getOneProject(projectId)
 except:
     print(f'Project entered not found: {projectNameInput}.  Check the name and try again.')
     sys.exit()
 
-# print(api.getAllOpenTasksInAProject(projectId))
+projectTasks = api.getAllOpenTasksInAProject(projectId)
+taskList = {}
+key = 1
+for task in projectTasks:
+    for project in projectData:
+        if project['id'] == task['project_id']:
+            projectName = project['name']
+
+    taskList.update({key: {'content': task['content'], 'due': task['due'], 'labels': task['labels'], 'parent_id' : task['parent_id']}})
+    key += 1
+
+
+pprint(taskList)
 
 
 
